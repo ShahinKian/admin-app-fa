@@ -1,0 +1,42 @@
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+  experimental: {
+    optimizePackageImports: ['package-name'],
+  },
+   sassOptions: {
+    quietDeps: true,  
+    silenceDeprecations: ['import', 'global-builtin'],
+  },
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
+  },
+    images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "api.lorem.space",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "a0.muscache.com",
+      },
+      {
+        protocol: "https",
+        hostname: "avatars.githubusercontent.com",
+      },
+    ],
+  },
+};
+
+export default nextConfig;
