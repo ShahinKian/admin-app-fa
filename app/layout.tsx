@@ -1,5 +1,5 @@
-import "../assets/scss/globals.scss";
-import "../assets/scss/theme.scss";
+import "./assets/scss/globals.scss";
+import "./assets/scss/theme.scss";
 
 // import { Inter } from "next/font/google";
 import { siteConfig } from "@/config/site";
@@ -9,7 +9,6 @@ import TanstackProvider from "@/provider/providers.client";
 import AuthProvider from "@/provider/auth.provider";
 import "flatpickr/dist/themes/light.css";
 import DirectionProvider from "@/provider/direction.provider";
-//const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: {
@@ -19,22 +18,18 @@ export const metadata = {
   description: siteConfig.description,
 };
 
-export default async function RootLayout({ children, params }: { 
-  children: React.ReactNode; 
-  params: Promise<{ lang: any }> 
-}) {
-  const { lang } = await params;
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={lang} dir="rtl" data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html lang="fa" dir="rtl" data-scroll-behavior="smooth" suppressHydrationWarning>
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <body className="dash-tail-app" suppressHydrationWarning>
-      <AuthProvider>
-        <TanstackProvider>
-          <Providers>
-            <DirectionProvider lang={lang}>{children}</DirectionProvider>
-          </Providers>
-        </TanstackProvider>
-      </AuthProvider>
+        <AuthProvider>
+          <TanstackProvider>
+            <Providers>
+              <DirectionProvider>{children}</DirectionProvider>
+            </Providers>
+          </TanstackProvider>
+        </AuthProvider>
       </body>
     </html>
   );
