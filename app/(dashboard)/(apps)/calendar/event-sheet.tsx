@@ -22,7 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
+import DatePicker from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
+import TimePicker from "react-multi-date-picker/plugins/time_picker";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, CalendarIcon } from "lucide-react";
@@ -212,17 +215,23 @@ const EventSheet = ({ open, onClose, categories, event, selectedDate }: {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
-                          <Controller
-                            name="startDate"
-                            control={control}
-                            render={({ field }) => (
-                              <Calendar
-                                mode="single"
-                                selected={startDate}
-                                onSelect={(date) => setStartDate(date as Date)}
-                                
-                              />
-                            )}
+                          <DatePicker
+                            value={startDate}
+                            onChange={(value) => {
+                              const nextDate = value?.toDate?.();
+                              if (nextDate) {
+                                setStartDate(nextDate);
+                                setValue("startDate", nextDate);
+                              }
+                            }}
+                            calendar={persian}
+                            locale={persian_fa}
+                            format="YYYY/MM/DD HH:mm"
+                            calendarPosition="bottom-right"
+                            plugins={[
+                              <TimePicker key="start-time" position="bottom" hideSeconds />,
+                            ]}
+                            className="rtl"
                           />
                         </PopoverContent>
                       </Popover>
@@ -250,17 +259,23 @@ const EventSheet = ({ open, onClose, categories, event, selectedDate }: {
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
-                          <Controller
-                            name="endDate"
-                            control={control}
-                            render={({ field }) => (
-                              <Calendar
-                                mode="single"
-                                selected={endDate}
-                                onSelect={(date) => setEndDate(date as Date)}
-                                
-                              />
-                            )}
+                          <DatePicker
+                            value={endDate}
+                            onChange={(value) => {
+                              const nextDate = value?.toDate?.();
+                              if (nextDate) {
+                                setEndDate(nextDate);
+                                setValue("endDate", nextDate);
+                              }
+                            }}
+                            calendar={persian}
+                            locale={persian_fa}
+                            format="YYYY/MM/DD HH:mm"
+                            calendarPosition="bottom-right"
+                            plugins={[
+                              <TimePicker key="end-time" position="bottom" hideSeconds />,
+                            ]}
+                            className="rtl"
                           />
                         </PopoverContent>
                       </Popover>
