@@ -1,154 +1,122 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import FullCalendar from "@fullcalendar/react"; // must go before plugins
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
-import listPlugin from "@fullcalendar/list";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { PersianCalendar } from "persian-calendar-suite";
 import EventSheet from "./event-sheet";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import ExternalDraggingevent from "./dragging-events";
 import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarEvent, CalendarCategory } from "@/app/api/calendars/data"
-import {
-  EventApi,
-  DateSelectArg,
-  EventClickArg,
-  EventContentArg,
-  formatDate,
-} from '@fullcalendar/core'
-const wait = () => new Promise((resolve) => setTimeout(resolve, 1000));
+import { CalendarEvent, CalendarCategory } from "@/app/api/calendars/data";
+
 interface CalendarViewProps {
   events: CalendarEvent[];
   categories: CalendarCategory[];
-
-
 }
+
+const categoryColors: Record<string, string> = {
+  business: "#6366f1",
+  personal: "#22c55e",
+  holiday: "#ef4444",
+  family: "#06b6d4",
+  meeting: "#f59e0b",
+  etc: "#06b6d4",
+};
+
+const toCalendarEvent = (event: CalendarEvent) => {
+  const start = new Date(event.start);
+  const end = event.end ? new Date(event.end) : new Date(start.getTime() + 60 * 60 * 1000);
+
+  return {
+    id: String(event.id),
+    date: start.toISOString().slice(0, 10),
+    startTime: start.toTimeString().slice(0, 5),
+    endTime: end.toTimeString().slice(0, 5),
+    title: event.title,
+    color: categoryColors[event.extendedProps.calendar] || "#6366f1",
+    isAllDay: event.allDay,
+    isMultiDay: start.toDateString() !== end.toDateString(),
+    endDate: start.toDateString() !== end.toDateString()
+      ? end.toISOString().slice(0, 10)
+      : undefined,
+  };
+};
 
 const CalendarView = ({ events, categories }: CalendarViewProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string[] | null>(null);
   const [selectedEventDate, setSelectedEventDate] = useState<Date | null>(null);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-  const [draggableInitialized, setDraggableInitialized] = useState<boolean>(false);
-
-  // event canvas state
-  const [sheetOpen, setSheetOpen] = useState<boolean>(false);
-  const [date, setDate] = React.useState<Date>(new Date());
-
-  const [dragEvents] = useState([
-    { title: "New Event Planning", id: "101", tag: "business" },
-    { title: "Meeting", id: "102", tag: "meeting" },
-    { title: "Generating Reports", id: "103", tag: "holiday" },
-    { title: "Create New theme", id: "104", tag: "etc" },
-  ]);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [date, setDate] = useState<Date>(new Date());
 
   useEffect(() => {
-    setSelectedCategory(categories?.map((c) => c.value));
-  }, [events, categories]);
+    setSelectedCategory(categories?.map((c) => c.value) ?? []);
+  }, [categories]);
 
-  useEffect(() => {
-    const draggableEl = document.getElementById("external-events");
+  const calendarEvents = useMemo(() => {
+    return (events ?? [])
+      .filter((event) =>
+        selectedCategory?.includes(event.extendedProps.calendar)
+      )
+      .map(toCalendarEvent);
+  }, [events, selectedCategory]);
 
-    const initDraggable = () => {
-      if (draggableEl) {
-        new Draggable(draggableEl, {
-          itemSelector: ".fc-event",
-          eventData: function (eventEl) {
-            const title = eventEl.getAttribute("title");
-            const id = eventEl.getAttribute("data");
-            const event = dragEvents.find((e) => e.id === id);
-            const tag = event ? event.tag : "";
-            return {
-              title: title,
-              id: id,
-              extendedProps: {
-                calendar: tag,
-              },
-            };
-          },
-        });
-      }
-    };
+  const handleOpenCreate = (selectedDate?: Date) => {
+    setSelectedEvent(null);
+    setSelectedEventDate(selectedDate ?? date);
+    setSheetOpen(true);
+  };
 
-    if (dragEvents.length > 0) {
-      initDraggable();
-    }
+  const handleEventClick = (event: any) => {
+    const start = new Date(event.date + "T" + (event.startTime || "00:00"));
+    const end = new Date(event.date + "T" + (event.endTime || "01:00"));
 
-    return () => {
-      draggableEl?.removeEventListener("mousedown", initDraggable);
-    };
-  }, [dragEvents]);
-  // event click
-  const handleEventClick = (arg: any) => {
+    setSelectedEvent({
+      event: {
+        id: event.id,
+        title: event.title,
+        start,
+        end,
+        extendedProps: {
+          calendar: event.calendar || event.category || "business",
+        },
+      },
+    });
     setSelectedEventDate(null);
     setSheetOpen(true);
-    setSelectedEvent(arg);
-    wait().then(() => (document.body.style.pointerEvents = "auto"));
   };
-  // handle close modal
+
   const handleCloseModal = () => {
     setSheetOpen(false);
     setSelectedEvent(null);
     setSelectedEventDate(null);
   };
-  const handleDateClick = (arg: any) => {
-    setSheetOpen(true);
-    setSelectedEventDate(arg);
-    setSelectedEvent(null);
-    wait().then(() => (document.body.style.pointerEvents = "auto"));
-  };
 
   const handleCategorySelection = (category: string) => {
-    if (selectedCategory && selectedCategory.includes(category)) {
-      setSelectedCategory(selectedCategory.filter((c) => c !== category));
-    } else {
-      setSelectedCategory([...selectedCategory || [], category]);
-    }
+    setSelectedCategory((current) => {
+      if (current?.includes(category)) {
+        return current.filter((c) => c !== category);
+      }
+      return [...(current ?? []), category];
+    });
   };
-
-  const handleClassName = (arg: EventContentArg) => {
-
-    if (arg.event.extendedProps.calendar === "holiday") {
-      return "destructive";
-    }
-    else if (arg.event.extendedProps.calendar === "business") {
-      return "primary";
-    } else if (arg.event.extendedProps.calendar === "personal") {
-      return "success";
-    } else if (arg.event.extendedProps.calendar === "family") {
-      return "info";
-    } else if (arg.event.extendedProps.calendar === "etc") {
-      return "info";
-    } else if (arg.event.extendedProps.calendar === "meeting") {
-      return "warning";
-    }
-    else {
-      return "primary";
-    }
-
-  };
-
-  const filteredEvents = events?.filter((event) =>
-    selectedCategory?.includes(event.extendedProps.calendar)
-  );
 
   return (
     <>
-      <div className=" grid grid-cols-12 gap-6 divide-x  divide-border">
-        <Card className="col-span-12 lg:col-span-4 2xl:col-span-3  pb-5">
-          <CardContent className="p-0 ">
+      <div className="grid grid-cols-12 gap-6 divide-x divide-border">
+        <Card className="col-span-12 lg:col-span-4 2xl:col-span-3 pb-5">
+          <CardContent className="p-0">
             <CardHeader className="border-none mb-2 pt-5">
-              <Button onClick={handleDateClick}>
+              <Button onClick={() => handleOpenCreate()}>
                 <Plus className="w-4 h-4 text-primary-foreground ltr:mr-1 rtl:ml-1" />
-                Add Event
+                افزودن رویداد
               </Button>
             </CardHeader>
+
             <div className="px-3">
               <DatePicker
                 value={date}
@@ -156,7 +124,7 @@ const CalendarView = ({ events, categories }: CalendarViewProps) => {
                   const nextDate = value?.toDate?.();
                   if (nextDate) {
                     setDate(nextDate);
-                    handleDateClick({ date: nextDate });
+                    setSelectedEventDate(nextDate);
                   }
                 }}
                 calendar={persian}
@@ -169,19 +137,12 @@ const CalendarView = ({ events, categories }: CalendarViewProps) => {
               />
             </div>
 
-            <div id="external-events" className=" space-y-1.5 mt-6 px-4">
-              <p className=" text-sm font-medium text-default-700 pb-2">
-                Drag and drop your event or click in the calendar
-              </p>
-              {dragEvents.map((event) => (
-                <ExternalDraggingevent key={event.id} event={event} />
-              ))}
+            <div className="py-4 text-default-800 font-semibold text-xs uppercase mt-4 px-4">
+              فیلتر
             </div>
-            <div className="py-4 text-default-800  font-semibold text-xs uppercase mt-4 px-4">
-              FILTER
-            </div>
-            <ul className=" space-y-2 px-4">
-              <li className=" flex gap-3">
+
+            <ul className="space-y-2 px-4">
+              <li className="flex gap-3">
                 <Checkbox
                   checked={selectedCategory?.length === categories?.length}
                   onClick={() => {
@@ -192,10 +153,11 @@ const CalendarView = ({ events, categories }: CalendarViewProps) => {
                     }
                   }}
                 />
-                <Label>All</Label>
+                <Label>همه</Label>
               </li>
+
               {categories?.map((category) => (
-                <li className=" flex gap-3 " key={category.value}>
+                <li className="flex gap-3" key={category.value}>
                   <Checkbox
                     className={category.className}
                     id={category.label}
@@ -209,43 +171,33 @@ const CalendarView = ({ events, categories }: CalendarViewProps) => {
           </CardContent>
         </Card>
 
-        <Card className="col-span-12 lg:col-span-8 2xl:col-span-9  pt-5">
+        <Card className="col-span-12 lg:col-span-8 2xl:col-span-9 pt-5">
           <CardContent className="dash-tail-calendar">
-            <FullCalendar
-              plugins={[
-                dayGridPlugin,
-                timeGridPlugin,
-                interactionPlugin,
-                listPlugin,
-              ]}
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
-              }}
-              events={filteredEvents}
-              editable={true}
-              rerenderDelay={10}
-              eventDurationEditable={false}
-              selectable={true}
-              selectMirror={true}
-              droppable={true}
-              dayMaxEvents={2}
-              weekends={true}
-              eventClassNames={handleClassName}
-              dateClick={handleDateClick}
-              eventClick={handleEventClick}
-              initialView="dayGridMonth"
-            />
+            <div dir="rtl" className="w-full">
+              <PersianCalendar
+                events={calendarEvents}
+                initialView="month"
+                editable={false}
+                showWeekends={true}
+                headerFormat="full"
+                onEventClick={handleEventClick}
+                onEventCreate={(event) => {
+                  handleOpenCreate(
+                    event?.date ? new Date(event.date) : undefined
+                  );
+                }}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
+
       <EventSheet
         open={sheetOpen}
         onClose={handleCloseModal}
         categories={categories}
         event={selectedEvent}
-        selectedDate={selectedEventDate}
+        selectedDate={selectedEventDate ? { date: selectedEventDate } : null}
       />
     </>
   );
