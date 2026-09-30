@@ -17,7 +17,7 @@ export function proxy(request: any) {
       request.cookies.has("__Secure-next-auth.session-token") ||
       request.cookies.has("next-auth.session-token");
     return NextResponse.redirect(
-      new URL(hasSessionCookie ? "/dashboard" : "/auth/login", request.url)
+      new URL(hasSessionCookie ? "/" : "/auth/login", request.url)
     );
   }
 
