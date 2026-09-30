@@ -9,7 +9,9 @@ import EventSheet from "./event-sheet";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import ExternalDraggingevent from "./dragging-events";
-import { Calendar } from "@/components/ui/calendar";
+import DatePicker from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -148,13 +150,22 @@ const CalendarView = ({ events, categories }: CalendarViewProps) => {
               </Button>
             </CardHeader>
             <div className="px-3">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={(s) => {
-                  handleDateClick(s);
+              <DatePicker
+                value={date}
+                onChange={(value) => {
+                  const nextDate = value?.toDate?.();
+                  if (nextDate) {
+                    setDate(nextDate);
+                    handleDateClick({ date: nextDate });
+                  }
                 }}
-                className="rounded-md border w-full p-0 border-none"
+                calendar={persian}
+                locale={persian_fa}
+                format="YYYY/MM/DD"
+                calendarPosition="bottom-right"
+                className="w-full"
+                containerClassName="w-full"
+                inputClass="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
               />
             </div>
 
