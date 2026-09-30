@@ -12,15 +12,6 @@ export function proxy(request: any) {
     return NextResponse.redirect(new URL(pathWithoutLocale + search, request.url));
   }
 
-  if (pathname === "/") {
-    const hasSessionCookie =
-      request.cookies.has("__Secure-next-auth.session-token") ||
-      request.cookies.has("next-auth.session-token");
-    return NextResponse.redirect(
-      new URL(hasSessionCookie ? "/" : "/auth/login", request.url)
-    );
-  }
-
   return NextResponse.next();
 }
 
